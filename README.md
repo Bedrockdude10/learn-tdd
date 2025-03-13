@@ -51,7 +51,7 @@ Briefly explain a limitation of the tests in `tests/authorSchema.test.ts` in the
 
 
 
-## Part 3
+## Part 3 *** DO NOT HAVE TO SUBMIT BECAUSE WE DID NOT GET TO IT IN CLASS ******
 
 Generate the coverage report for the tests you wrote. How can you improve
 your tests using the coverage report? Briefly explain your 
