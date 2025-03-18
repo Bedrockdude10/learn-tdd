@@ -1,5 +1,7 @@
 import mongoose, { FilterQuery } from "mongoose";
 import Author, { IAuthor } from "../models/author";
+import request from "supertest";
+import app from "../server";
 
 describe('Verify author schema', () => {
     test('should be invalid if first name is empty', async () => {
@@ -327,5 +329,51 @@ describe('Verify retrieving author by an ID', () => {
         (Author.findOne as jest.Mock).mockResolvedValueOnce(null);
         const authorId = await Author.getAuthorIdByName('Doe', 'John');
         expect(authorId).toBeNull();
+    });
+});
+
+describe("GET /authors", () => {
+    beforeEach(async () => {
+        await Author.deleteMany(); // Clear the collection before each test
+    });
+
+    afterAll(async () => {
+        await Author.deleteMany(); // Clean up after tests
+    });
+
+    it("should return a sorted list of authors by family name", async () => {
+        await Author.create([
+            { first_name: "Isaac", family_name: "Asimov", date_of_birth: "1920-01-02" },
+            { first_name: "Mary", family_name: "Shelley", date_of_birth: "1797-08-30" },
+            { first_name: "Jules", family_name: "Verne", date_of_birth: "1828-02-08" },
+        ]);
+
+        const response = await request(app).get("/authors");
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual([
+            { first_name: "Isaac", family_name: "Asimov", date_of_birth: "1920-01-02" },
+            { first_name: "Mary", family_name: "Shelley", date_of_birth: "1797-08-30" },
+            { first_name: "Jules", family_name: "Verne", date_of_birth: "1828-02-08" },
+        ]);
+        //expect(response.body).toBeSortedBy("family_name");
+    });
+
+    it("should return 'No authors found' when the database is empty", async () => {
+        const response = await request(app).get("/authors");
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ message: "No authors found" });
+    });
+
+    it("should return a 500 error when an internal server error occurs", async () => {
+        jest.spyOn(Author, "find").mockImplementation(() => {
+            throw new Error("Database error");
+        });
+
+        const response = await request(app).get("/authors");
+
+        expect(response.status).toBe(500);
+        expect(response.body).toEqual({ error: "Internal Server Error" });
     });
 });
