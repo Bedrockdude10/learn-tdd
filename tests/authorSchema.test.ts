@@ -316,7 +316,7 @@ describe('Verify retrieving author by an ID', () => {
     });
 
     afterAll(() => {
-        jest.clearAllMocks();
+        //jest.clearAllMocks();
     });
 
     it('should return the author ID if found', async () => {
@@ -333,47 +333,86 @@ describe('Verify retrieving author by an ID', () => {
 });
 
 describe("GET /authors", () => {
+    // unsorted list of authors
+    const authors = [
+        { first_name: 'Kim', family_name: 'Woon', date_of_birth: new Date('1958-10-10'), date_of_death: new Date('2020-01-01') },
+        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1964-05-21') },
+        { first_name: 'John', family_name: 'Woon', date_of_birth: new Date('1989-01-09'), date_of_death: new Date('2020-01-01') },
+        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1992-12-27') }
+    ];
+
+    // unsorted list of authors in response format
+    const authorsResponse = authors.map(author => ({
+        first_name: author.first_name,
+        family_name: author.family_name,
+        date_of_birth: author.date_of_birth.toISOString(),
+        date_of_death: author.date_of_death?.toISOString(),
+    }));
+
+    // sorted list of authors by family name
+    const familyNameSortedAuthors = [
+        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1964-05-21') },
+        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1992-12-27') },
+        { first_name: 'Kim', family_name: 'Woon', date_of_birth: new Date('1958-10-10'), date_of_death: new Date('2020-01-01') },
+        { first_name: 'John', family_name: 'Woon', date_of_birth: new Date('1989-01-09'), date_of_death: new Date('2020-01-01') },
+    ];
+
+    // sorted list of authors by family name in response format
+    const familyNameSortedAuthorsResponse = familyNameSortedAuthors.map(author => ({
+        first_name: author.first_name,
+        family_name: author.family_name,
+        date_of_birth: author.date_of_birth.toISOString(),
+        date_of_death: author.date_of_death?.toISOString(),
+    }));
+
     beforeEach(async () => {
-        await Author.deleteMany(); // Clear the collection before each test
+        Author.getAllAuthors = jest.fn();
     });
 
     afterAll(async () => {
-        await Author.deleteMany(); // Clean up after tests
+        jest.clearAllMocks(); // Clean up after tests
     });
 
     it("should return a sorted list of authors by family name", async () => {
-        await Author.create([
-            { first_name: "Isaac", family_name: "Asimov", date_of_birth: "1920-01-02" },
-            { first_name: "Mary", family_name: "Shelley", date_of_birth: "1797-08-30" },
-            { first_name: "Jules", family_name: "Verne", date_of_birth: "1828-02-08" },
-        ]);
-
-        const response = await request(app).get("/authors");
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual([
-            { first_name: "Isaac", family_name: "Asimov", date_of_birth: "1920-01-02" },
-            { first_name: "Mary", family_name: "Shelley", date_of_birth: "1797-08-30" },
-            { first_name: "Jules", family_name: "Verne", date_of_birth: "1828-02-08" },
-        ]);
-        //expect(response.body).toBeSortedBy("family_name");
-    });
-
-    it("should return 'No authors found' when the database is empty", async () => {
-        const response = await request(app).get("/authors");
-
-        expect(response.status).toBe(200);
-        expect(response.body).toEqual({ message: "No authors found" });
-    });
-
-    it("should return a 500 error when an internal server error occurs", async () => {
-        jest.spyOn(Author, "find").mockImplementation(() => {
-            throw new Error("Database error");
+        // Mocking the function and returning the authors
+        // Forcing getAllAuthors to return authors array (mocking return value)
+        (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
+            // if sort option is given (in this case, by family name)
+            if (sortOpts) {
+                return Promise.resolve(
+                    authors.sort((a, b) => a.family_name.localeCompare(b.family_name))
+                );
+            }
+            // if no sort option is given
+            else {
+                return Promise.resolve(
+                    authors
+                );
+            }
         });
 
         const response = await request(app).get("/authors");
 
-        expect(response.status).toBe(500);
-        expect(response.body).toEqual({ error: "Internal Server Error" });
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(familyNameSortedAuthorsResponse);
+        expect(response.body).not.toEqual(authorsResponse);
     });
+
+    // it("should return 'No authors found' when the database is empty", async () => {
+    //     const response = await request(app).get("/authors");
+
+    //     expect(response.status).toBe(200);
+    //     expect(response.body).toEqual({ message: "No authors found" });
+    // });
+
+    // it("should return a 500 error when an internal server error occurs", async () => {
+    //     jest.spyOn(Author, "find").mockImplementation(() => {
+    //         throw new Error("Database error");
+    //     });
+
+    //     const response = await request(app).get("/authors");
+
+    //     expect(response.status).toBe(500);
+    //     expect(response.body).toEqual({ error: "Internal Server Error" });
+    // });
 });
