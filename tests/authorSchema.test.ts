@@ -355,16 +355,9 @@ describe("GET /authors", () => {
         // Mocking the function and returning the authors
         // Forcing getAllAuthors to return authors array (mocking return value)
         (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
-            // if sort option is given as descending
-            if (sortOpts && Object.values(sortOpts).includes(-1)) {
-                const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
-                return Promise.resolve(sortedAuthors);
-            }
-            // if no sort option is given or sort option is ascending
-            else {
-                const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
-                return Promise.resolve(sortedAuthors);
-            }
+            // return ascending order by default
+            const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
+            return Promise.resolve(sortedAuthors);
         });
 
         // ascending order (default)
@@ -377,16 +370,8 @@ describe("GET /authors", () => {
 
         // Mock getAllAuthors #2
         (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
-            // if sort option is given as descending
-            if (sortOpts && Object.values(sortOpts).includes(-1)) {
-                const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
-                return Promise.resolve(sortedAuthors);
-            }
-            // if no sort option is given or sort option is ascending
-            else {
-                const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
-                return Promise.resolve(sortedAuthors);
-            }
+            const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
+            return Promise.resolve(sortedAuthors);
         });
 
         // ascending order (explicit)
@@ -402,23 +387,17 @@ describe("GET /authors", () => {
         // Mock getAllAuthors #3
         (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
             // if sort option is given as descending
-            if (sortOpts && Object.values(sortOpts).includes(-1)) {
-                const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
-                return Promise.resolve(sortedAuthors);
-            }
-            // if no sort option is given or sort option is ascending
-            else {
-                const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
-                return Promise.resolve(sortedAuthors);
-            }
+            const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
+            return Promise.resolve(sortedAuthors);
         });
 
         // descending order
         const response3 = await request(app).get("/authors").query({ family_name: -1 });
 
         expect(response3.status).toBe(200);
-        // expect(response3.body).toEqual(sortedAuthorsDesc);
-        // expect(response3.body).not.toEqual(sortedAuthorsAsc);
+        expect(response3.body).toEqual(sortedAuthorsDesc);
+        expect(response3.body).not.toEqual(sortedAuthorsAsc);
+        expect(response3.body).not.toEqual(authors);
     });
 
     it("should return 'No authors found' when the database is empty", async () => {
