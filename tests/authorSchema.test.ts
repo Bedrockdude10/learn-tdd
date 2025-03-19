@@ -316,7 +316,7 @@ describe('Verify retrieving author by an ID', () => {
     });
 
     afterAll(() => {
-        //jest.clearAllMocks();
+        jest.clearAllMocks();
     });
 
     it('should return the author ID if found', async () => {
