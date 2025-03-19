@@ -49,7 +49,7 @@ should be placed in `tests/authorService.test.ts`.
 
 Briefly explain a limitation of the tests in `tests/authorSchema.test.ts` in the space below.
 
-
+One limitation of the tests in tests/authorSchema.test.ts is that they do not fully cover edge cases for validation. While the tests verify that required fields exist and return expected values, they do not test how the schema handles invalid inputs (e.g., incorrect data types, missing optional fields, or especially logical inconsistencies such as a date_of_death occurring before a date_of_birth). This limited coverage may allow some unexpected or erroneous inputs to pass undetected.
 
 ## Part 3 *** DO NOT HAVE TO SUBMIT BECAUSE WE DID NOT GET TO IT IN CLASS ******
 
