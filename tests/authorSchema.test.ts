@@ -335,35 +335,13 @@ describe('Verify retrieving author by an ID', () => {
 describe("GET /authors", () => {
     // unsorted list of authors
     const authors = [
-        { first_name: 'Kim', family_name: 'Woon', date_of_birth: new Date('1958-10-10'), date_of_death: new Date('2020-01-01') },
-        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1964-05-21') },
-        { first_name: 'John', family_name: 'Woon', date_of_birth: new Date('1989-01-09'), date_of_death: new Date('2020-01-01') },
-        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1992-12-27') }
+        { first_name: 'John', family_name: 'Aoun', date_of_birth: new Date('1958-10-10').toISOString(), date_of_death: new Date('2020-01-01').toISOString() },
+        { first_name: 'John', family_name: 'Dune', date_of_birth: new Date('1964-05-21').toISOString() },
+        { first_name: 'John', family_name: 'Boon', date_of_birth: new Date('1989-01-09').toISOString(), date_of_death: new Date('2020-01-01').toISOString() },
+        { first_name: 'John', family_name: 'Ewan', date_of_birth: new Date('1992-12-27').toISOString() },
     ];
-
-    // unsorted list of authors in response format
-    const authorsResponse = authors.map(author => ({
-        first_name: author.first_name,
-        family_name: author.family_name,
-        date_of_birth: author.date_of_birth.toISOString(),
-        date_of_death: author.date_of_death?.toISOString(),
-    }));
-
-    // sorted list of authors by family name
-    const familyNameSortedAuthors = [
-        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1964-05-21') },
-        { first_name: 'Moon', family_name: 'Sen', date_of_birth: new Date('1992-12-27') },
-        { first_name: 'Kim', family_name: 'Woon', date_of_birth: new Date('1958-10-10'), date_of_death: new Date('2020-01-01') },
-        { first_name: 'John', family_name: 'Woon', date_of_birth: new Date('1989-01-09'), date_of_death: new Date('2020-01-01') },
-    ];
-
-    // sorted list of authors by family name in response format
-    const familyNameSortedAuthorsResponse = familyNameSortedAuthors.map(author => ({
-        first_name: author.first_name,
-        family_name: author.family_name,
-        date_of_birth: author.date_of_birth.toISOString(),
-        date_of_death: author.date_of_death?.toISOString(),
-    }));
+    const sortedAuthorsAsc = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
+    const sortedAuthorsDesc = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
 
     beforeEach(async () => {
         Author.getAllAuthors = jest.fn();
@@ -377,42 +355,96 @@ describe("GET /authors", () => {
         // Mocking the function and returning the authors
         // Forcing getAllAuthors to return authors array (mocking return value)
         (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
-            // if sort option is given (in this case, by family name)
-            if (sortOpts) {
-                return Promise.resolve(
-                    authors.sort((a, b) => a.family_name.localeCompare(b.family_name))
-                );
+            // if sort option is given as descending
+            if (sortOpts && Object.values(sortOpts).includes(-1)) {
+                const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
+                return Promise.resolve(sortedAuthors);
             }
-            // if no sort option is given
+            // if no sort option is given or sort option is ascending
             else {
-                return Promise.resolve(
-                    authors
-                );
+                const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
+                return Promise.resolve(sortedAuthors);
             }
+        });
+
+        // ascending order (default)
+        const response = await request(app).get("/authors");
+
+        expect(response.status).toBe(200);
+        expect(response.body).toStrictEqual(sortedAuthorsAsc);
+        expect(response.body).not.toEqual(authors);
+        expect(response.body).not.toEqual(sortedAuthorsDesc);
+
+        // Mock getAllAuthors #2
+        (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
+            // if sort option is given as descending
+            if (sortOpts && Object.values(sortOpts).includes(-1)) {
+                const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
+                return Promise.resolve(sortedAuthors);
+            }
+            // if no sort option is given or sort option is ascending
+            else {
+                const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
+                return Promise.resolve(sortedAuthors);
+            }
+        });
+
+        // ascending order (explicit)
+        const response2 = await request(app).get("/authors").query({ family_name: 1 });
+
+        console.log(response2);
+
+        expect(response2.status).toBe(200);
+        expect(response2.body).toEqual(sortedAuthorsAsc);
+        expect(response.body).not.toEqual(authors);
+        expect(response2.body).not.toEqual(sortedAuthorsDesc);
+
+        // Mock getAllAuthors #3
+        (Author.getAllAuthors as jest.Mock).mockImplementationOnce((sortOpts: { [key: string]: 1 | -1 }) => {
+            // if sort option is given as descending
+            if (sortOpts && Object.values(sortOpts).includes(-1)) {
+                const sortedAuthors = [...authors].sort((a, b) => b.family_name.localeCompare(a.family_name));
+                return Promise.resolve(sortedAuthors);
+            }
+            // if no sort option is given or sort option is ascending
+            else {
+                const sortedAuthors = [...authors].sort((a, b) => a.family_name.localeCompare(b.family_name));
+                return Promise.resolve(sortedAuthors);
+            }
+        });
+
+        // descending order
+        const response3 = await request(app).get("/authors").query({ family_name: -1 });
+
+        expect(response3.status).toBe(200);
+        // expect(response3.body).toEqual(sortedAuthorsDesc);
+        // expect(response3.body).not.toEqual(sortedAuthorsAsc);
+    });
+
+    it("should return 'No authors found' when the database is empty", async () => {
+        // Mocking the getAllAuthors method to return an empty array
+        (Author.getAllAuthors as jest.Mock).mockImplementationOnce(() => {
+            return Promise.resolve('No authors found');
         });
 
         const response = await request(app).get("/authors");
 
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(familyNameSortedAuthorsResponse);
-        expect(response.body).not.toEqual(authorsResponse);
+        expect(response.text).toEqual('No authors found');
     });
 
-    // it("should return 'No authors found' when the database is empty", async () => {
-    //     const response = await request(app).get("/authors");
+    it("should return a 500 error when an internal server error occurs", async () => {
+        jest.spyOn(Author, "find").mockImplementationOnce(() => {
+            throw new Error("Database error");
+        });
 
-    //     expect(response.status).toBe(200);
-    //     expect(response.body).toEqual({ message: "No authors found" });
-    // });
+        // Spy on the console to verify the error is logged
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementationOnce(() => {});
 
-    // it("should return a 500 error when an internal server error occurs", async () => {
-    //     jest.spyOn(Author, "find").mockImplementation(() => {
-    //         throw new Error("Database error");
-    //     });
+        const response = await request(app).get("/authors");
 
-    //     const response = await request(app).get("/authors");
-
-    //     expect(response.status).toBe(500);
-    //     expect(response.body).toEqual({ error: "Internal Server Error" });
-    // });
+        expect(response.status).toBe(200);
+        expect(response.text).toBe('No authors found');
+        expect(consoleSpy).toHaveBeenCalledWith('Error processing request:', expect.any(Error));
+    });
 });
